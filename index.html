@@ -563,11 +563,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Handle password reset redirect
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('setpassword') || window.location.hash.includes('type=recovery') || window.location.hash.includes('type=signup')) {
-    // Supabase will auto-handle the token; just show login page with a message
-    notify(LANG === 'ar' ? 'يمكنك الآن تسجيل الدخول بكلمة مرورك الجديدة' : 'You can now sign in with your new password');
+// Handle Supabase auth redirect (signup confirmation)
+const hash = window.location.hash;
+if (hash && (hash.includes('type=signup') || hash.includes('type=recovery'))) {
+  // Let Supabase process the token from URL
+  const { data, error } = await sb.auth.getSession();
+  if (data?.session) {
+    // User is now logged in via token, show set password page
+    setLoad(false);
+    showPg('pg-setpass');
+  } else {
+    setLoad(false);
+    notify('Link expired. Please register again.', 'e');
   }
+}
 });
 
 // ── Auth ──────────────────────────────────────────────────
@@ -1023,6 +1032,75 @@ async function saveCourse() {
   notify(APP.editId ? t('savedMsg') : t('publishedMsg'));
   await renderMgr();
 }
+
+
+async function doSetPassword() {
+  const pw  = document.getElementById('sp-pw').value;
+  const pw2 = document.getElementById('sp-pw2').value;
+  
+  if (!pw || pw.length < 6) { 
+    notify('Password must be at least 6 characters', 'e'); 
+    return; 
+  }
+  if (pw !== pw2) { 
+    notify('Passwords do not match', 'e'); 
+    return; 
+  }
+  
+  setLoad(true);
+  const { error } = await sb.auth.updateUser({ password: pw });
+  
+  if (error) { 
+    setLoad(false); 
+    notify(error.message, 'e'); 
+    return; 
+  }
+  
+  // Password set! Now load profile and go to dashboard
+  const session = await sbGetSession();
+  const profile = await sbGetProfile(session.user.id);
+  setLoad(false);
+  
+  if (!profile) {
+    // Profile not created yet — create it now
+    await sb.from('profiles').insert({
+      id: session.user.id,
+      name: session.user.user_metadata?.name || '',
+      email: session.user.email,
+      department: session.user.user_metadata?.department || '',
+      role: 'trainee'
+    });
+    APP.profile = await sbGetProfile(session.user.id);
+  } else {
+    APP.profile = profile;
+  }
+  
+  notify('✅ Password set! Welcome!');
+  await renderTrainee();
+}
 </script>
+
+<!-- ════════════ SET PASSWORD PAGE ════════════ -->
+<div id="pg-setpass" class="page">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--teal-light),var(--green-light));">
+  <div style="width:100%;max-width:430px;padding:20px;">
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:34px;box-shadow:0 8px 30px var(--shadow);">
+      <h2 class="f-20 f-900 c-text mb-6">🔐 Set Your Password</h2>
+      <p class="f-13 c-muted mb-22">Create a password to access your account</p>
+      <div class="field">
+        <label>New Password</label>
+        <input type="password" id="sp-pw" placeholder="Enter new password (min 6 chars)"/>
+      </div>
+      <div class="field">
+        <label>Confirm Password</label>
+        <input type="password" id="sp-pw2" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-success btn-lg w100" style="justify-content:center;" onclick="doSetPassword()">
+        Save Password & Login
+      </button>
+    </div>
+  </div>
+</div>
+</div>
 </body>
 </html>
