@@ -53,7 +53,7 @@ async function sbRegister(name, email, department) {
     password: crypto.randomUUID(), // temporary — user will reset via email link
     options: {
       data: { name, department, role: 'trainee' },
-   emailRedirectTo: 'https://ubaiddevpk.github.io/Al-Rahman-Fund/index.html?setpassword=1',
+  emailRedirectTo: 'https://al-rahman-fund.vercel.app/index.html',
     }
   });
 }
