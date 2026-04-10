@@ -53,7 +53,7 @@ async function sbRegister(name, email, department) {
     password: crypto.randomUUID(), // temporary — user will reset via email link
     options: {
       data: { name, department, role: 'trainee' },
-      emailRedirectTo: window.location.origin + (window.location.pathname.includes('index') ? window.location.pathname : '/index.html') + '?setpassword=1',
+   emailRedirectTo: 'https://ubaiddevpk.github.io/Al-Rahman-Fund/index.html?setpassword=1',
     }
   });
 }
