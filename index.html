@@ -1492,6 +1492,7 @@ if (hash && hash.includes('type=signup')) {
     showPg('pg-forgot');
   }
 }
+});
       // ── Auth ──────────────────────────────────────────────────
       async function doLogin() {
         const em = document.getElementById("li-em").value.trim();
@@ -1528,24 +1529,32 @@ if (hash && hash.includes('type=signup')) {
         updateLangBtns();
       }
 
-      async function doRegister() {
-        const n = document.getElementById("rg-n").value.trim();
-        const e = document.getElementById("rg-e").value.trim();
-        const d = document.getElementById("rg-d").value.trim();
-        if (!n || !e || !d) {
-          notify(t("fillAllErr"), "e");
-          return;
-        }
-        setLoad(true);
-        const { error } = await sbRegister(n, e, d);
-        setLoad(false);
-        if (error) {
-          notify(error.message, "e");
-          return;
-        }
-        notify(t("registerOk"));
-        setTimeout(() => showPg("pg-login"), 2500);
-      }
+  async function doRegister() {
+  const n = document.getElementById("rg-n").value.trim();
+  const e = document.getElementById("rg-e").value.trim();
+  const d = document.getElementById("rg-d").value.trim();
+  if (!n || !e || !d) { notify(t("fillAllErr"), "e"); return; }
+
+  setLoad(true);
+  const { data, error } = await sbRegister(n, e, d);
+  setLoad(false);
+
+  // ── Duplicate email check ──
+  if (error) {
+    if (error.message.toLowerCase().includes('already') || 
+        error.message.toLowerCase().includes('registered') ||
+        error.message.toLowerCase().includes('exists')) {
+      notify('⚠️ This email is already registered! Please login instead.', 'e');
+    } else {
+      notify(error.message, 'e');
+    }
+    return;
+  }
+
+  // ── Success ──
+  notify('✅ Account created! Check your email for the confirmation link.');
+  setTimeout(() => showPg('pg-login'), 3000);
+}
 
       // ── Trainee ───────────────────────────────────────────────
       async function renderTrainee() {
