@@ -1441,57 +1441,57 @@
       }
 
       // ── Init ──────────────────────────────────────────────────
-      window.addEventListener("DOMContentLoaded", async () => {
-        // Init eye icon in login password field
-        document.getElementById("li-pw-btn").innerHTML = IC.eye(
-          "var(--text-muted)",
-          17,
-        );
+ window.addEventListener("DOMContentLoaded", async () => {
+  document.getElementById("li-pw-btn").innerHTML = IC.eye("var(--text-muted)", 17);
+  applyI18n();
+  updateLangBtns();
+  updatePlaceholders();
 
-        applyI18n();
-        updateLangBtns();
-        updatePlaceholders();
-
-        setLoad(true);
-        const session = await sbGetSession();
-        if (session) {
-          const profile = await sbGetProfile(session.user.id);
-          if (profile) {
-            APP.profile = profile;
-            profile.role === "manager"
-              ? await renderMgr()
-              : await renderTrainee();
-          } else {
-            setLoad(false);
-          }
-        } else {
-          setLoad(false);
-        }
-
-        // Handle password reset redirect
-        // Handle Supabase auth redirect (signup confirmation)
-       const hash = window.location.hash;
-if (hash && hash.includes('type=signup')) {
-  // New trainee confirming email → set password
-  const { data } = await sb.auth.getSession();
-  setLoad(false);
-  if (data?.session) {
-    showPg('pg-setpass');
-  } else {
-    notify('Link expired. Please register again.', 'e');
-    showPg('pg-login');
+  // ── Check hash FIRST before anything else ──
+  const hash = window.location.hash;
+  
+  if (hash && hash.includes('type=signup')) {
+    // New user clicked confirmation email → show set password page
+    setLoad(true);
+    const { data } = await sb.auth.getSession();
+    setLoad(false);
+    if (data?.session) {
+      showPg('pg-setpass');
+    } else {
+      notify('Link expired. Please register again.', 'e');
+      showPg('pg-login');
+    }
+    return; // ← STOP here, don't go to dashboard
   }
-} else if (hash && hash.includes('type=recovery')) {
-  // Existing user resetting password
-  const { data } = await sb.auth.getSession();
-  setLoad(false);
-  if (data?.session) {
-    showPg('pg-resetpass');
-  } else {
-    notify('Reset link expired. Please try again.', 'e');
-    showPg('pg-forgot');
+  
+  if (hash && hash.includes('type=recovery')) {
+    // User clicked reset password email → show reset page
+    setLoad(true);
+    const { data } = await sb.auth.getSession();
+    setLoad(false);
+    if (data?.session) {
+      showPg('pg-resetpass');
+    } else {
+      notify('Reset link expired. Please try again.', 'e');
+      showPg('pg-forgot');
+    }
+    return; // ← STOP here, don't go to dashboard
   }
-}
+
+  // ── Normal login check (only runs if no hash) ──
+  setLoad(true);
+  const session = await sbGetSession();
+  if (session) {
+    const profile = await sbGetProfile(session.user.id);
+    if (profile) {
+      APP.profile = profile;
+      profile.role === "manager" ? await renderMgr() : await renderTrainee();
+    } else {
+      setLoad(false);
+    }
+  } else {
+    setLoad(false);
+  }
 });
       // ── Auth ──────────────────────────────────────────────────
       async function doLogin() {
