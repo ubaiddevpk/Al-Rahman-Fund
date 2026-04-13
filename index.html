@@ -2171,14 +2171,24 @@
 async function doForgotPassword() {
   const em = document.getElementById('fp-em').value.trim();
   if (!em) { notify('Please enter your email', 'e'); return; }
+
+  // Check email exists first
   setLoad(true);
   const { error } = await sb.auth.resetPasswordForEmail(em, {
     redirectTo: 'https://al-rahman-fund.vercel.app/index.html',
   });
   setLoad(false);
-  if (error) { notify(error.message, 'e'); return; }
-  notify('✅ Reset link sent! Check your email.');
-  setTimeout(() => showPg('pg-login'), 2500);
+
+  if (error) {
+    console.error('Reset error:', error);
+    notify('❌ ' + error.message, 'e');
+    return;
+  }
+
+  // Always show success (Supabase security - doesn't reveal if email exists)
+  notify('✅ If this email exists, a reset link has been sent!');
+  document.getElementById('fp-em').value = '';
+  setTimeout(() => showPg('pg-login'), 3000);
 }
 
 // ── Reset Password (from email link) ─────────────────────
